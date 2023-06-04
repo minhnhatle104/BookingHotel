@@ -1,6 +1,8 @@
 package main
 
 import (
+	"airbnb/config"
+	"fmt"
 	"log"
 	"net/http"
 
@@ -10,13 +12,23 @@ import (
 )
 
 func main() {
-	// refer https://github.com/go-sql-driver/mysql#dsn-data-source-name for details
-	dsn := "user:123456@tcp(127.0.0.1:3308)/airbnb?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	cfg, err := config.LoadConfig()
 	if err != nil {
-		log.Fatalln("Error in connect db: ", err)
+		log.Println("Cannot connected to db")
 	}
-	log.Println("Connected to db: ", db)
+
+	dsn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=True&loc=Local",
+		cfg.MySQL.Username,
+		cfg.MySQL.Password,
+		cfg.MySQL.Host,
+		cfg.MySQL.Port,
+		cfg.MySQL.DBName,
+	)
+	if db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{}); err != nil {
+		log.Fatalln("Error is: ", err)
+	} else {
+		log.Println("Connected to db: ", db)
+	}
 
 	r := gin.Default()
 	r.GET("/ping", func(c *gin.Context) {
@@ -24,5 +36,5 @@ func main() {
 			"message": "pong",
 		})
 	})
-	r.Run("localhost:8081") // listen and serve on 0.0.0.0:8080 (for windows "localhost:8080")
+	r.Run("localhost:8081")
 }
